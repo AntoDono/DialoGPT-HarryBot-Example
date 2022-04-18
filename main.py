@@ -6,8 +6,9 @@ tokenizer = AutoTokenizer.from_pretrained("AntoDono/DialoGPT-Harry")
 model = AutoModelForCausalLM.from_pretrained("AntoDono/DialoGPT-Harry")
 
 started = False
+clear_chat_history = True
 debug = False
-chat_history_token_display = False
+chat_history_token_display = True
 
 while True:
     # encode the new user input, add the eos_token and return a tensor in Pytorch
@@ -25,11 +26,17 @@ while True:
         started = True
         bot_input_ids = new_user_input_ids
     else:
-        # Once the chat history goes over 50 token the bot dies
-        if (bot_input_ids.shape[0]*bot_input_ids.shape[1] + new_user_input_ids.shape[0] * new_user_input_ids.shape[1] > 50):
-            bot_input_ids = new_user_input_ids
+        if (clear_chat_history):
+            # Once the chat history goes over 30 token, clear history
+            if (bot_input_ids.shape[0]*bot_input_ids.shape[1] + new_user_input_ids.shape[0] * new_user_input_ids.shape[1] > 30):
+                bot_input_ids = new_user_input_ids
+            else:
+                bot_input_ids = torch.cat([chat_history_ids, new_user_input_ids], dim=-1)
         else:
-            bot_input_ids = torch.cat([chat_history_ids, new_user_input_ids], dim=-1)
+            if (not started):
+                bot_input_ids = new_user_input_ids
+            else:
+                bot_input_ids = torch.cat([chat_history_ids, new_user_input_ids], dim=-1)
 
     if (debug):
         print("==Bot_input_ids==")
